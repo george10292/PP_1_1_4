@@ -5,6 +5,7 @@ import jm.task.core.jdbc.util.Util;
 import org.hibernate.HibernateException;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
+import org.hibernate.Transaction;
 
 import javax.persistence.PersistenceException;
 import java.util.ArrayList;
@@ -20,47 +21,66 @@ public class UserDaoHibernateImpl implements UserDao {
 
     @Override
     public void createUsersTable() {
+        Transaction transaction = null;
         try (Session session = SESSION_FACTORY.openSession()){
-            session.beginTransaction();
+            transaction = session.beginTransaction();
             sql = "CREATE TABLE IF NOT EXISTS users " +
                     "(ID BIGINT PRIMARY KEY AUTO_INCREMENT, Name VARCHAR(255), LastName VARCHAR(255), Age TINYINT)";
             session.createSQLQuery(sql).executeUpdate();
+            transaction.commit();
         } catch (PersistenceException e) {
             e.printStackTrace();
+            if (transaction != null) {
+                transaction.rollback();
+            }
         }
     }
 
     @Override
     public void dropUsersTable() {
+        Transaction transaction = null;
         try (Session session = SESSION_FACTORY.openSession()) {
-            session.beginTransaction();
+            transaction = session.beginTransaction();
             sql = "DROP TABLE IF EXISTS users";
             session.createSQLQuery(sql).executeUpdate();
+            transaction.commit();
         } catch (PersistenceException e) {
             e.printStackTrace();
+            if (transaction != null) {
+                transaction.rollback();
+            }
         }
     }
 
     @Override
     public void saveUser(String name, String lastName, byte age) {
+        Transaction transaction = null;
         try (Session session = SESSION_FACTORY.openSession()) {
-            session.beginTransaction();
+            transaction = session.beginTransaction();
             session.save(new User(name, lastName, age));
-        } catch (PersistenceException e) {
-            e.printStackTrace();
+            transaction.commit();
+        } catch (Exception e){
+            if (transaction != null) {
+                transaction.rollback();
+            }
         }
     }
 
     @Override
     public void removeUserById(long id) {
+        Transaction transaction = null;
         try (Session session = SESSION_FACTORY.openSession()) {
-            session.beginTransaction();
+            transaction = session.beginTransaction();
             User user = session.get(User.class, id);
             if (user != null) {
                 session.delete(user);
             }
+            transaction.commit();
         } catch (PersistenceException e) {
             e.printStackTrace();
+            if (transaction != null) {
+                transaction.rollback();
+            }
         }
     }
 
@@ -76,12 +96,17 @@ public class UserDaoHibernateImpl implements UserDao {
 
     @Override
     public void cleanUsersTable() {
+        Transaction transaction = null;
         try (Session session = SESSION_FACTORY.openSession()) {
-            session.beginTransaction();
+            transaction = session.beginTransaction();
             sql = "TRUNCATE TABLE users";
             session.createSQLQuery(sql).executeUpdate();
+            transaction.commit();
         } catch (PersistenceException e) {
             e.printStackTrace();
+            if (transaction != null) {
+                transaction.rollback();
+            }
         }
     }
 }
